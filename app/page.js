@@ -87,13 +87,6 @@ export default function Home() {
     setSelectedEmail({ ...email, classification });
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('tokens');
-    localStorage.removeItem('openAiKey');
-    router.push('/login');
-  };
-
   return (
     <Box p={4} bgcolor="#f5f5f5" minHeight="100vh">
       <Paper elevation={3} sx={{ padding: 2, marginBottom: 2 }}>
