@@ -2,6 +2,8 @@
 
 This is a web application for fetching and classifying emails using OpenAI's GPT. Built with Next.js and Material UI, it supports user authentication, email fetching, and classification.
 
+https://www.loom.com/share/c5c569ab43314c968c15586ad5bde063?sid=cec9dd1e-5c32-4fb5-bdce-7ad91b9555e5
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:

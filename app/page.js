@@ -31,18 +31,21 @@ export default function Home() {
           localStorage.setItem('user', JSON.stringify(userData));
           localStorage.setItem('tokens', JSON.stringify(tokenData));
 
-          router.replace(router.pathname);
+          // Redirect to avoid URL params in the address bar
+          router.replace(router.pathname); 
         } catch (error) {
           console.error('Failed to parse user or tokens', error);
         }
-      }
+      } 
 
+      // Check localStorage
       const storedUser = localStorage.getItem('user');
       const storedTokens = localStorage.getItem('tokens');
+      const storedKey = localStorage.getItem('openAiKey');
 
       if (!storedUser || !storedTokens) {
         router.push('/login');
-      }
+      } 
     };
 
     if (typeof window !== 'undefined') {

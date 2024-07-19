@@ -14,7 +14,16 @@ export default function UserDetails() {
     }
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const tokens = JSON.parse(localStorage.getItem('tokens'));
+    if (tokens) {
+      try {
+        await axios.post('/api/revoke', { token: tokens.access_token });
+      } catch (error) {
+        console.error('Failed to revoke token', error);
+      }
+    }
+
     localStorage.removeItem('user');
     localStorage.removeItem('tokens');
     localStorage.removeItem('openAiKey');
@@ -36,7 +45,7 @@ export default function UserDetails() {
         variant="contained"
         color="error"
         startIcon={<LogoutIcon />}
-        onClick={handleLogout}
+        onClick={() => handleLogout()}
         sx={{ alignSelf: 'flex-start' }}
       >
         Logout
