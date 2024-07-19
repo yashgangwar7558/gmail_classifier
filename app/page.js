@@ -1,95 +1,145 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Box, Button, Paper, Typography, CircularProgress } from '@mui/material';
+import { Mail as MailIcon, Class as ClassIcon, Logout as LogoutIcon } from '@mui/icons-material';
+import EmailList from './components/EmailList';
+import EmailDetails from './components/EmailDetails';
+import UserDetails from './components/UserDetails';
+import axios from 'axios';
 
 export default function Home() {
+  const router = useRouter();
+  const [emails, setEmails] = useState([]);
+  const [selectedEmail, setSelectedEmail] = useState(null);
+  const [classifications, setClassifications] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+
+  useEffect(() => {
+    const handleAuthentication = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlUser = params.get('user');
+      const urlTokens = params.get('tokens');
+
+      if (urlUser && urlTokens) {
+        try {
+          const userData = JSON.parse(decodeURIComponent(urlUser));
+          const tokenData = JSON.parse(decodeURIComponent(urlTokens));
+
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('tokens', JSON.stringify(tokenData));
+
+          router.replace(router.pathname);
+        } catch (error) {
+          console.error('Failed to parse user or tokens', error);
+        }
+      }
+
+      const storedUser = localStorage.getItem('user');
+      const storedTokens = localStorage.getItem('tokens');
+
+      if (!storedUser || !storedTokens) {
+        router.push('/login');
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      handleAuthentication();
+    }
+  }, [router]);
+
+  const fetchEmails = async () => {
+    setLoading(true);
+    setLoadingMessage('Fetching emails...');
+    try {
+      const tokens = JSON.parse(localStorage.getItem('tokens'));
+      const response = await axios.post('/api/emails', { tokens });
+      setEmails(response.data);
+    } catch (error) {
+      console.error('Error fetching emails:', error);
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+    }
+  };
+
+  const classifyEmails = async () => {
+    setLoading(true);
+    setLoadingMessage('Classifying emails...');
+    try {
+      const response = await axios.post('/api/classify', {
+        openAiKey: localStorage.getItem('openAiKey') || process.env.OPENAI_API_KEY,
+        emails,
+      });
+      setClassifications(response.data.reduce((acc, cur) => ({ ...acc, [cur.id]: cur.classification }), {}));
+    } catch (error) {
+      console.error('Error classifying emails:', error);
+    } finally {
+      setLoading(false);
+      setLoadingMessage('');
+    }
+  };
+
+  const handleEmailClick = (email) => {
+    const classification = classifications[email.id];
+    setSelectedEmail({ ...email, classification });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('tokens');
+    localStorage.removeItem('openAiKey');
+    router.push('/login');
+  };
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    <Box p={4} bgcolor="#f5f5f5" minHeight="100vh">
+      <Paper elevation={3} sx={{ padding: 2, marginBottom: 2 }}>
+        <UserDetails />
+      </Paper>
+      <Paper elevation={3} sx={{ padding: 2, marginBottom: 2 }}>
+        <Typography variant="h5" gutterBottom>Email Actions</Typography>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box display="flex" gap={2}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<MailIcon />}
+              onClick={fetchEmails}
+              disabled={loading}
+            >
+              Fetch Emails
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<ClassIcon />}
+              onClick={classifyEmails}
+              disabled={loading}
+            >
+              Classify Emails
+            </Button>
+          </Box>
+        </Box>
+      </Paper>
+      <Paper elevation={3} sx={{ padding: 2 }}>
+        {loading ? (
+          <Box display="flex" alignItems="center" justifyContent="center" minHeight="200px">
+            <CircularProgress />
+            <Typography variant="body1" sx={{ ml: 2 }}>{loadingMessage}</Typography>
+          </Box>
+        ) : emails.length === 0 ? (
+          <Typography variant="body1" color="text.secondary" align="center">
+            No fetched emails
+          </Typography>
+        ) : (
+          <EmailList emails={emails} classifications={classifications} onEmailClick={handleEmailClick} />
+        )}
+      </Paper>
+      <EmailDetails email={selectedEmail} classification={selectedEmail?.classification} onClose={() => setSelectedEmail(null)} />
+    </Box>
   );
 }
+
